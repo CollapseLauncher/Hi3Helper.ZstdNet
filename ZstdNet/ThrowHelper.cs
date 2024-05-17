@@ -9,7 +9,7 @@ namespace ZstdNet
 #if NET6_0_OR_GREATER
         public static void ThrowIfDllNotExist()
         {
-            if (!ExternMethods.IsLibraryExist(ExternMethods.DllName))
+            if (!DllUtils.IsLibraryExist(DllUtils.DllName))
                 throw new DllNotFoundException("libzstd.dll is not found!");
         }
 #endif
