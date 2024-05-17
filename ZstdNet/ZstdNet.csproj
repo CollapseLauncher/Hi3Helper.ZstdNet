@@ -1,38 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <Version>1.5.7</Version>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <Title>ZstdNet</Title>
-    <PackageId>ZstdNet</PackageId>
-    <Company>SKB Kontur</Company>
-    <Authors>SKB Kontur</Authors>
-    <Description>Zstd compression library wrapper for .NET</Description>
-    <Copyright>Copyright © SKB Kontur 2016-2026</Copyright>
-    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/skbkontur/ZstdNet</PackageProjectUrl>
-    <PackageTags>zstd zstandard compression</PackageTags>
-    <LangVersion>7.3</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <EnablePackageValidation>true</EnablePackageValidation>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <Deterministic>true</Deterministic>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="build/*.targets" Pack="true" PackagePath="build/" />
-    <None Include="runtimes/**/*" Pack="true" CopyToOutputDirectory="PreserveNewest" PackagePath="runtimes/" />
-    <None Include="../LICENSE" Pack="true" PackagePath="/" />
-    <None Include="../README.md" Pack="true" PackagePath="/" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Memory" Version="4.6.3" />
-  </ItemGroup>
-
+	<PropertyGroup>
+		<Version>1.4.8</Version>
+		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
+		<Title>ZstdNet</Title>
+		<PackageId>Hi3Helper.ZstdNet</PackageId>
+		<Company>SKB Kontur, Collapse Project Team</Company>
+		<Authors>SKB Kontur, Collapse Project Team</Authors>
+		<Description>Zstd compression library wrapper for .NET</Description>
+		<Copyright>Copyright © SKB Kontur 2016-present</Copyright>
+		<PackageProjectUrl>https://github.com/CollapseLauncher/Hi3Helper.ZstdNet</PackageProjectUrl>
+		<PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+		<PackageTags>zstd zstandard compression</PackageTags>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<LangVersion>14</LangVersion>
+		<Platforms>AnyCPU;x64;x86;ARM64</Platforms>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+		<IsAotCompatible>true</IsAotCompatible>
+		<IsTrimmable>true</IsTrimmable>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<Deterministic>true</Deterministic>
+		<DebugType>portable</DebugType>
+		<AssemblyName>Hi3Helper.ZstdNet</AssemblyName>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="icon.png" Pack="true" PackagePath="\" />
+		<None Include="..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\LICENSE" Pack="true" PackagePath="lib\" />
+		<None Include="Lib\**\*">
+			<PackagePath>build\Lib\</PackagePath>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Memory" Version="*" />
+	</ItemGroup>
 </Project>

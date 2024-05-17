@@ -4,100 +4,105 @@ using size_t = System.UIntPtr;
 
 namespace ZstdNet
 {
-	public class Compressor : IDisposable
-	{
-		public Compressor()
-			: this(CompressionOptions.Default)
-		{}
+    public class Compressor : IDisposable
+    {
+        public Compressor()
+            : this(CompressionOptions.Default)
+        { }
 
-		public Compressor(CompressionOptions options)
-		{
-			Options = options;
-			cctx = ExternMethods.ZSTD_createCCtx().EnsureZstdSuccess();
+        public Compressor(CompressionOptions options)
+        {
+#if NET6_0_OR_GREATER
+            ReturnValueExtensions.ThrowIfDllNotExist();
+#endif
 
-			options.ApplyCompressionParams(cctx);
+            Options = options;
 
-			if(options.Cdict != IntPtr.Zero)
-				ExternMethods.ZSTD_CCtx_refCDict(cctx, options.Cdict).EnsureZstdSuccess();
-		}
+            cctx = ExternMethods.ZSTD_createCCtx().EnsureZstdSuccess();
 
-		~Compressor() => Dispose(false);
+            options.ApplyCompressionParams(cctx);
 
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
+            if (options.Cdict != IntPtr.Zero)
+                ExternMethods.ZSTD_CCtx_refCDict(cctx, options.Cdict).EnsureZstdSuccess();
+        }
 
-		private void Dispose(bool disposing)
-		{
-			if(cctx == IntPtr.Zero)
-				return;
+        ~Compressor() => Dispose(false);
 
-			ExternMethods.ZSTD_freeCCtx(cctx);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-			cctx = IntPtr.Zero;
-		}
+        private void Dispose(bool disposing)
+        {
+            if (cctx == IntPtr.Zero)
+                return;
 
-		public byte[] Wrap(byte[] src)
-			=> Wrap(new ReadOnlySpan<byte>(src));
+            ExternMethods.ZSTD_freeCCtx(cctx);
 
-		public byte[] Wrap(ArraySegment<byte> src)
-			=> Wrap((ReadOnlySpan<byte>)src);
+            cctx = IntPtr.Zero;
+        }
 
-		public byte[] Wrap(ReadOnlySpan<byte> src)
-		{
-			//NOTE: Wrap tries its best, but if src is uncompressible and the size is too large, ZSTD_error_dstSize_tooSmall will be thrown
-			var dstCapacity = Math.Min(Consts.MaxByteArrayLength, GetCompressBoundLong((ulong)src.Length));
-			var dst = ArrayPool<byte>.Shared.Rent((int)dstCapacity);
+        public byte[] Wrap(byte[] src)
+            => Wrap(new ReadOnlySpan<byte>(src));
 
-			try
-			{
-				var dstSize = Wrap(src, new Span<byte>(dst));
+        public byte[] Wrap(ArraySegment<byte> src)
+            => Wrap((ReadOnlySpan<byte>)src);
 
-				var result = new byte[dstSize];
-				Array.Copy(dst, result, dstSize);
-				return result;
-			}
-			finally
-			{
-				ArrayPool<byte>.Shared.Return(dst);
-			}
-		}
+        public byte[] Wrap(ReadOnlySpan<byte> src)
+        {
+            //NOTE: Wrap tries its best, but if src is uncompressible and the size is too large, ZSTD_error_dstSize_tooSmall will be thrown
+            var dstCapacity = Math.Min(Consts.MaxByteArrayLength, GetCompressBoundLong((ulong)src.Length));
+            var dst = ArrayPool<byte>.Shared.Rent((int)dstCapacity);
 
-		public static int GetCompressBound(int size)
-			=> (int)ExternMethods.ZSTD_compressBound((size_t)size);
+            try
+            {
+                var dstSize = Wrap(src, new Span<byte>(dst));
 
-		public static ulong GetCompressBoundLong(ulong size)
-			=> (ulong)ExternMethods.ZSTD_compressBound((size_t)size);
+                var result = new byte[dstSize];
+                Array.Copy(dst, result, dstSize);
+                return result;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(dst);
+            }
+        }
 
-		public int Wrap(byte[] src, byte[] dst, int offset)
-			=> Wrap(new ReadOnlySpan<byte>(src), dst, offset);
+        public static int GetCompressBound(int size)
+            => (int)ExternMethods.ZSTD_compressBound((size_t)size);
 
-		public int Wrap(ArraySegment<byte> src, byte[] dst, int offset)
-			=> Wrap((ReadOnlySpan<byte>)src, dst, offset);
+        public static ulong GetCompressBoundLong(ulong size)
+            => (ulong)ExternMethods.ZSTD_compressBound((size_t)size);
 
-		public int Wrap(ReadOnlySpan<byte> src, byte[] dst, int offset)
-		{
-			if(offset < 0 || offset >= dst.Length)
-				throw new ArgumentOutOfRangeException(nameof(offset));
+        public int Wrap(byte[] src, byte[] dst, int offset)
+            => Wrap(new ReadOnlySpan<byte>(src), dst, offset);
 
-			return Wrap(src, new Span<byte>(dst, offset, dst.Length - offset));
-		}
+        public int Wrap(ArraySegment<byte> src, byte[] dst, int offset)
+            => Wrap((ReadOnlySpan<byte>)src, dst, offset);
 
-		public int Wrap(ReadOnlySpan<byte> src, Span<byte> dst)
-		{
-			var dstSize = Options.AdvancedParams != null
-				? ExternMethods.ZSTD_compress2(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length)
-				: Options.Cdict == IntPtr.Zero
-					? ExternMethods.ZSTD_compressCCtx(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.CompressionLevel)
-					: ExternMethods.ZSTD_compress_usingCDict(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.Cdict);
+        public int Wrap(ReadOnlySpan<byte> src, byte[] dst, int offset)
+        {
+            if (offset < 0 || offset >= dst.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
-			return (int)dstSize.EnsureZstdSuccess();
-		}
+            return Wrap(src, new Span<byte>(dst, offset, dst.Length - offset));
+        }
 
-		public readonly CompressionOptions Options;
+        public int Wrap(ReadOnlySpan<byte> src, Span<byte> dst)
+        {
+            var dstSize = Options.AdvancedParams != null
+                ? ExternMethods.ZSTD_compress2(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length)
+                : Options.Cdict == IntPtr.Zero
+                    ? ExternMethods.ZSTD_compressCCtx(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.CompressionLevel)
+                    : ExternMethods.ZSTD_compress_usingCDict(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.Cdict);
 
-		private IntPtr cctx;
-	}
+            return (int)dstSize.EnsureZstdSuccess();
+        }
+
+        public readonly CompressionOptions Options;
+
+        private IntPtr cctx;
+    }
 }
