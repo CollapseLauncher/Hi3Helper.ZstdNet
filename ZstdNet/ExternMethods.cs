@@ -43,7 +43,7 @@ namespace ZstdNet
         }
 
 #if !NET6_0_OR_GREATER
-        private static void SetWinDllDirectory()
+        public static void SetWinDllDirectory()
         {
             string path = Path.Combine(_currentProcPath, _libFolderPath);
             if(!SetDllDirectory(path))
@@ -53,9 +53,9 @@ namespace ZstdNet
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool SetDllDirectory(string path);
 #else
-        internal static bool IsLibraryExist(string libraryName) => File.Exists(string.Format(_libFullPath, libraryName));
+        public static bool IsLibraryExist(string libraryName) => File.Exists(string.Format(_libFullPath, libraryName));
 
-        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        internal static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             libraryName = string.Format(_libFullPath, libraryName);
             string searchPathName = searchPath == null ? "Default" : searchPath.ToString();
@@ -74,6 +74,16 @@ namespace ZstdNet
 
     internal static class ExternMethods
     {
+        static ExternMethods()
+        {
+#if !NET6_0_OR_GREATER
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                DllUtils.SetWinDllDirectory();
+#else
+            // Use custom Dll import resolver
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllUtils.DllImportResolver);
+#endif
+        }
 
         [DllImport(DllUtils.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern size_t ZDICT_trainFromBuffer(byte[] dictBuffer, size_t dictBufferCapacity, byte[] samplesBuffer, size_t[] samplesSizes, uint nbSamples);
