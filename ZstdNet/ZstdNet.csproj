@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>1.5.1</Version>
+		<Version>1.5.2</Version>
 		<TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
 		<Title>ZstdNet</Title>
 		<PackageId>Hi3Helper.ZstdNet</PackageId>
@@ -27,13 +27,10 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="icon.png" Pack="true" PackagePath="\" />
-		<None Include="..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\LICENSE" Pack="true" PackagePath="lib\" />
-		<None Include="Lib\**\*">
-			<PackagePath>build\Lib\</PackagePath>
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
+		<None Include="Lib\*-*\*.*" Pack="true" PackagePath="build\Lib\" CopyToOutputDirectory="Always" />
+		<None Include="Lib\Hi3Helper.ZstdNet.targets" Pack="true" PackagePath="build\" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="System.Memory" Version="*" />

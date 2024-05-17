@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x86\libzstd.dll">
+			<Link>Lib\win-x86\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd.dll">
+			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-arm64\libzstd.dll">
+			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x86\libzstd.dll" Condition="'$(Platform)' == 'x86'">
+			<Link>Lib\win-x86\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd.dll" Condition="'$(Platform)' == 'x64'">
+			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-arm64\libzstd.dll" Condition="'$(Platform)' == 'arm64'">
+			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>
