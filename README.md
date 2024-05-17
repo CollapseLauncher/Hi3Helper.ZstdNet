@@ -1,3 +1,5 @@
+This is a fork from the original repo by [**skbkontur**](https://github.com/skbkontur/ZstdNet).
+
 # ZstdNet &ensp;[![License](https://img.shields.io/github/license/skbkontur/ZstdNet.svg)](https://raw.githubusercontent.com/skbkontur/ZstdNet/master/LICENSE)
 
 [![Build and test](https://github.com/skbkontur/ZstdNet/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/skbkontur/ZstdNet/actions/workflows/build-and-test.yml)
