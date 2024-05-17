@@ -18,7 +18,7 @@ namespace ZstdNet
         private static readonly string _libFolderPath = Path.Combine("Lib", $"{_libPlatformNamePrefix}-{_libArchitecturePrefix}");
         private static readonly string _libFullPath = Path.Combine(_currentProcPath, _libFolderPath, "{0}" + _libExtensionPrefix);
 
-        private static string GetLibArchitecturePrefix() => RuntimeInformation.OSArchitecture.ToString().ToLower();
+        private static string GetLibArchitecturePrefix() => RuntimeInformation.ProcessArchitecture.ToString().ToLower();
 
         private static string GetLibExtensionPrefix()
         {
