@@ -9,6 +9,10 @@
 			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd-bmi2.dll">
+			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Include="$(MSBuildThisFileDirectory)Lib\win-arm64\libzstd.dll">
 			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -20,6 +24,10 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd.dll" Condition="'$(Platform)' == 'x64'">
+			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd-bmi2.dll" Condition="'$(Platform)' == 'x64'">
 			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

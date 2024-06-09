@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Diagnostics;
 #if NET6_0_OR_GREATER
 using System.Reflection;
+using System.Runtime.Intrinsics.X86;
+#else
+using System.Diagnostics;
 #endif
 using System.Runtime.InteropServices;
 using size_t = System.UIntPtr;
@@ -57,7 +59,11 @@ namespace ZstdNet
 
         internal static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            libraryName = string.Format(_libFullPath, libraryName);
+            if (Bmi2.IsSupported)
+                libraryName = string.Format(_libFullPath, libraryName + "-bmi2");
+            else
+                libraryName = string.Format(_libFullPath, libraryName);
+
             string searchPathName = searchPath == null ? "Default" : searchPath.ToString();
             // Try load the library and if fails, then throw.
             bool isLoadSuccessful = NativeLibrary.TryLoad(libraryName, assembly, searchPath, out IntPtr pResult);
