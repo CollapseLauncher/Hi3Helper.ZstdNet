@@ -55,7 +55,17 @@ namespace ZstdNet
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool SetDllDirectory(string path);
 #else
-        public static bool IsLibraryExist(string libraryName) => File.Exists(string.Format(_libFullPath, libraryName));
+        public static bool IsIgnoreMissingLibrary = false;
+
+        public static bool IsLibraryExist(string libraryName) => IsIgnoreMissingLibrary || File.Exists(string.Format(_libFullPath, libraryName));
+
+#if NET6_0_OR_GREATER
+        public static void ThrowIfDllNotExist()
+        {
+            if (!IsLibraryExist(DllName))
+                throw new DllNotFoundException("libzstd.dll is not found!");
+        }
+#endif
 
         internal static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
