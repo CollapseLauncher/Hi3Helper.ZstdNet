@@ -17,22 +17,30 @@
 			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\zstd\libzstd.so">
+			<Link>Lib\linux-x64\zstd\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)Lib\win-x86\libzstd.dll" Condition="'$(Platform)' == 'x86'">
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x86\libzstd.dll" Condition="'$(Platform)' == 'x86' and $([MSBuild]::IsOSPlatform('Windows'))">
 			<Link>Lib\win-x86\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd.dll" Condition="'$(Platform)' == 'x64'">
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd.dll" Condition="'$(Platform)' == 'x64' and $([MSBuild]::IsOSPlatform('Windows'))">
 			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd-bmi2.dll" Condition="'$(Platform)' == 'x64'">
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-x64\libzstd-bmi2.dll" Condition="'$(Platform)' == 'x64' and $([MSBuild]::IsOSPlatform('Windows'))">
 			<Link>Lib\win-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Include="$(MSBuildThisFileDirectory)Lib\win-arm64\libzstd.dll" Condition="'$(Platform)' == 'arm64'">
+		<None Include="$(MSBuildThisFileDirectory)Lib\win-arm64\libzstd.dll" Condition="'$(Platform)' == 'arm64' and $([MSBuild]::IsOSPlatform('Windows'))">
 			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\libzstd.so" Condition="'$(Platform)' == 'x64' and $([MSBuild]::IsOSPlatform('Linux'))">
+			<Link>Lib\linux-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
