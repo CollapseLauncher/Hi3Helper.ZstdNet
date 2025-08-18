@@ -26,22 +26,20 @@ namespace ZstdNet
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return ".dll";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 return ".so";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return ".dylib";
-            else return string.Empty;
+
+            return RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".dylib" : string.Empty;
         }
 
         private static string GetLibPlatformNamePrefix()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return $"win";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                return $"linux";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return "osx";
-            else return "unknown";
+                return "win";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return "linux";
+
+            return RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" : "unknown";
         }
 
 #if !NET6_0_OR_GREATER
@@ -99,7 +97,7 @@ namespace ZstdNet
             return pResult;
 
         Fail:
-            throw new FileLoadException($"Failed while loading library from this path: {libraryName}\r\nMake sure that the library/.dll is exist or valid and not corrupted!");
+            throw new FileLoadException($"Failed while loading library from this path: {libraryName}\r\nMake sure that the library/{GetLibExtensionPrefix()} is exist or valid and not corrupted!");
         }
 #endif
 
