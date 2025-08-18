@@ -4,7 +4,7 @@ dotnet restore || goto :Fail
 dotnet clean -c Release ZstdNet.csproj || goto :Fail
 call :Clean
 dotnet build -c Release ZstdNet.csproj || goto :Fail
-dotnet pack -c Release -o artifacts ZstdNet.csproj || goto :Fail
+dotnet pack -c Release -o artifacts -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg ZstdNet.csproj || goto :Fail
 goto :Success
 
 :Fail
