@@ -17,8 +17,12 @@
 			<Link>Lib\win-arm64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\zstd\libzstd.so">
-			<Link>Lib\linux-x64\zstd\%(FileName)%(Extension)</Link>
+		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\libzstd.so">
+			<Link>Lib\linux-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\libzstd-bmi2.so">
+			<Link>Lib\linux-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
@@ -40,6 +44,10 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\libzstd.so" Condition="'$(Platform)' == 'x64' and $([MSBuild]::IsOSPlatform('Linux'))">
+			<Link>Lib\linux-x64\%(FileName)%(Extension)</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="$(MSBuildThisFileDirectory)Lib\linux-x64\libzstd-bmi2.so" Condition="'$(Platform)' == 'x64' and $([MSBuild]::IsOSPlatform('Linux'))">
 			<Link>Lib\linux-x64\%(FileName)%(Extension)</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
