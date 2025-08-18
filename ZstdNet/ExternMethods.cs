@@ -69,19 +69,37 @@ namespace ZstdNet
 
         internal static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            if (Bmi2.IsSupported)
-                libraryName = string.Format(_libFullPath, libraryName + "-bmi2");
-            else
-                libraryName = string.Format(_libFullPath, libraryName);
+            string libraryNameLoad = Bmi2.IsSupported ?
+                string.Format(_libFullPath, libraryName + "-bmi2") :
+                string.Format(_libFullPath, libraryName);
 
-            string searchPathName = searchPath == null ? "Default" : searchPath.ToString();
             // Try load the library and if fails, then throw.
-            bool isLoadSuccessful = NativeLibrary.TryLoad(libraryName, assembly, searchPath, out IntPtr pResult);
-            if (!isLoadSuccessful || pResult == IntPtr.Zero)
-                throw new FileLoadException($"Failed while loading library from this path: {libraryName}\r\nMake sure that the library/.dll is exist or valid and not corrupted!");
+            bool isLoadSuccessful = NativeLibrary.TryLoad(libraryNameLoad, assembly, searchPath, out IntPtr pResult);
+            if (isLoadSuccessful && pResult != IntPtr.Zero)
+            {
+                return pResult;
+            }
 
-            // If success, then return the pointer to the library
+            // Throw if fails on loading standard libzstd while Bmi2 is not supported and no fallback available.
+            if (!Bmi2.IsSupported)
+            {
+                goto Fail;
+            }
+
+            // If loading Bmi2 lib is failing, try to load the standard one.
+            libraryNameLoad = string.Format(_libFullPath, libraryName);
+            isLoadSuccessful = NativeLibrary.TryLoad(libraryNameLoad, assembly, searchPath, out pResult);
+
+            // If it still fails, throw.
+            if (!isLoadSuccessful || pResult == IntPtr.Zero)
+            {
+                goto Fail;
+            }
+
             return pResult;
+
+        Fail:
+            throw new FileLoadException($"Failed while loading library from this path: {libraryName}\r\nMake sure that the library/.dll is exist or valid and not corrupted!");
         }
 #endif
 
