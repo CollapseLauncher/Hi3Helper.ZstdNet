@@ -3,14 +3,17 @@
 [![Build and test](https://github.com/skbkontur/ZstdNet/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/skbkontur/ZstdNet/actions/workflows/build-and-test.yml)
 [![NuGet](https://img.shields.io/nuget/v/ZstdNet.svg)](https://www.nuget.org/packages/ZstdNet/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ZstdNet.svg)](https://www.nuget.org/packages/ZstdNet)
+[![Reproducible Build](https://img.shields.io/badge/.NET%20Build-Reproducible-green)](https://nuget.info/packages/ZstdNet/1.5.7)
+[![Provenance Attestation](https://img.shields.io/badge/Provenance-Attested-green)](https://github.com/skbkontur/ZstdNet/attestations)
 
 **ZstdNet** is a wrapper of **Zstd** native library for .NET languages targeting `netstadard2.{0|1}`.
-ZstdNet NuGet package includes pre-built native shared libraries for [various platforms](.github/workflows/build-native.yml), including `win`, `linux`, `osx`.
+ZstdNet NuGet package includes pre-built native shared libraries for [various platforms](https://github.com/skbkontur/ZstdNet/blob/master/.github/workflows/build-native.yml), including `win`, `linux`, `osx`.
+For `win`, the static VC runtime is used.
 
 The package relies on the [dotnet runtime identifier resolution mechanism](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog).
-For .NET Framework, the package provides a [targets](ZstdNet/build/ZstdNet.targets) fallback, which requires an explicit selection of the platform — `x86`, `x64` or `ARM64`).
+For .NET Framework, the package provides a [targets](https://github.com/skbkontur/ZstdNet/blob/master/ZstdNet/build/ZstdNet.targets) fallback, which requires an explicit selection of the platform — `x86`, `x64` or `ARM64`).
 
-If you need to resolve native dependency at runtime, you can use the `NativeLibrary.SetDllImportResolver` (see an [example](ZstdNet.Tests/NativeResolver.cs)).
+If you need to resolve native dependency at runtime, you can use the `NativeLibrary.SetDllImportResolver` (see an [example](https://github.com/skbkontur/ZstdNet/blob/master/ZstdNet.Tests/NativeResolver.cs)).
 And for .NET Framework — `SetDllDirectory` from `kernel32.dll`.
 
 Provenance attestation is enabled for all artifacts in this repository including native libs, see page [Attestations](https://github.com/skbkontur/ZstdNet/attestations).
