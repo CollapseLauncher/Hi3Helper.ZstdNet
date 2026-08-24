@@ -147,7 +147,7 @@ namespace ZstdNet
             {
                 if (output.IsFullyConsumed)
                 {
-                    await FlushOutputBufferAsync(ref output, cancellationToken).ConfigureAwait(false);
+                    await FlushOutputBufferAsync(ref output, cancellationToken);
                     output.pos = 0;
                 }
 
@@ -248,12 +248,12 @@ namespace ZstdNet
                 if (!output.IsFullyConsumed)
                     continue;
 
-                await FlushOutputBufferAsync(ref output, cancellationToken).ConfigureAwait(false);
+                await FlushOutputBufferAsync(ref output, cancellationToken);
                 output.pos = 0;
             } while (Compress(ReadOnlySpan<byte>.Empty, ref output, ref input, directive) != 0);
 
             if (output.pos != 0)
-                await FlushOutputBufferAsync(ref output, cancellationToken).ConfigureAwait(false);
+                await FlushOutputBufferAsync(ref output, cancellationToken);
 
             pos = 0;
         }
@@ -265,7 +265,7 @@ namespace ZstdNet
 #if !NETSTANDARD2_0
 		public override async ValueTask DisposeAsync()
 		{
-			await DisposeAsyncCore().ConfigureAwait(false);
+			await DisposeAsyncCore();
 			GC.SuppressFinalize(this);
 		}
 
@@ -277,7 +277,7 @@ namespace ZstdNet
 
 			try
             {
-                await FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_end, CancellationToken.None).ConfigureAwait(false);
+                await FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_end, CancellationToken.None);
 
                 // Dispose if leaveOpen is false.
                 if (!leaveOpen)

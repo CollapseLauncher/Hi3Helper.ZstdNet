@@ -139,9 +139,9 @@ namespace ZstdNet
 				{
 					int bytesRead;
 #if !NETSTANDARD2_0
-					if((bytesRead = await innerStream.ReadAsync(inputMemory, cancellationToken).ConfigureAwait(false)) == 0)
+					if((bytesRead = await innerStream.ReadAsync(inputMemory, cancellationToken)) == 0)
 #else
-                    if((bytesRead = await innerStream.ReadAsync(inputBuffer, 0, bufferSize, cancellationToken).ConfigureAwait(false)) == 0)
+                    if((bytesRead = await innerStream.ReadAsync(inputBuffer, 0, bufferSize, cancellationToken)) == 0)
 #endif
                         break;
 
