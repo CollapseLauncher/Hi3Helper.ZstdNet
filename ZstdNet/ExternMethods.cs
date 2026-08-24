@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 #if NET6_0_OR_GREATER
 using System.Reflection;
@@ -13,12 +13,12 @@ namespace ZstdNet
 {
     public static class DllUtils
     {
-        private static readonly string _currentProcPath = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
-        private static readonly string _libArchitecturePrefix = GetLibArchitecturePrefix();
-        private static readonly string _libExtensionPrefix = GetLibExtensionPrefix();
-        private static readonly string _libPlatformNamePrefix = GetLibPlatformNamePrefix();
-        private static readonly string _libFolderPath = Path.Combine("Lib", $"{_libPlatformNamePrefix}-{_libArchitecturePrefix}");
-        private static readonly string _libFullPath = Path.Combine(_currentProcPath, _libFolderPath, "{0}" + _libExtensionPrefix);
+        private static readonly string CurrentProcPath = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        private static readonly string LibArchitecturePrefix = GetLibArchitecturePrefix();
+        private static readonly string LibExtensionPrefix = GetLibExtensionPrefix();
+        private static readonly string LibPlatformNamePrefix = GetLibPlatformNamePrefix();
+        private static readonly string LibFolderPath = Path.Combine("Lib", $"{LibPlatformNamePrefix}-{LibArchitecturePrefix}");
+        private static readonly string LibFullPath = Path.Combine(CurrentProcPath, LibFolderPath, "{0}" + LibExtensionPrefix);
 
         private static string GetLibArchitecturePrefix() => RuntimeInformation.ProcessArchitecture.ToString().ToLower();
 
@@ -55,7 +55,7 @@ namespace ZstdNet
 #else
         public static bool IsIgnoreMissingLibrary = false;
 
-        public static bool IsLibraryExist(string libraryName) => IsIgnoreMissingLibrary || File.Exists(string.Format(_libFullPath, libraryName));
+        public static bool IsLibraryExist(string libraryName) => IsIgnoreMissingLibrary || File.Exists(string.Format(LibFullPath, libraryName));
 
 #if NET6_0_OR_GREATER
         public static void ThrowIfDllNotExist()
@@ -68,8 +68,8 @@ namespace ZstdNet
         internal static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             string libraryNameLoad = Bmi2.IsSupported ?
-                string.Format(_libFullPath, libraryName + "-bmi2") :
-                string.Format(_libFullPath, libraryName);
+                string.Format(LibFullPath, libraryName + "-bmi2") :
+                string.Format(LibFullPath, libraryName);
 
             // Try load the library and if fails, then throw.
             bool isLoadSuccessful = NativeLibrary.TryLoad(libraryNameLoad, assembly, searchPath, out IntPtr pResult);
@@ -85,7 +85,7 @@ namespace ZstdNet
             }
 
             // If loading Bmi2 lib is failing, try to load the standard one.
-            libraryNameLoad = string.Format(_libFullPath, libraryName);
+            libraryNameLoad = string.Format(LibFullPath, libraryName);
             isLoadSuccessful = NativeLibrary.TryLoad(libraryNameLoad, assembly, searchPath, out pResult);
 
             // If it still fails, throw.
