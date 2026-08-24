@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -158,16 +159,12 @@ namespace ZstdNet
         }
 
         private unsafe void Decompress(Span<byte> buffer, ref ZSTD_Buffer output, ref ZSTD_Buffer input)
-        {
-            fixed (void* inputBufferHandle = &inputBuffer[0])
-            fixed (void* outputBufferHandle = &MemoryMarshal.GetReference(buffer))
-            {
-                input.buffer = new IntPtr(inputBufferHandle);
-                output.buffer = new IntPtr(outputBufferHandle);
+		{
+			input.buffer  = Marshal.UnsafeAddrOfPinnedArrayElement(inputBuffer, 0);
+			output.buffer = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
 
-                ZSTD_decompressStream(dStream, ref output, ref input).EnsureZstdSuccess();
-            }
-        }
+			ZSTD_decompressStream(dStream, ref output, ref input).EnsureZstdSuccess();
+		}
 
 		private int FillInputBuffer(Span<byte> inputSpan, ref ZSTD_Buffer input)
 		{
