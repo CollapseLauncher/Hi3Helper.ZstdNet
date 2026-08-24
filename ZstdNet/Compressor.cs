@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Threading;
-using size_t = System.UIntPtr;
 
 namespace ZstdNet
 {
@@ -48,7 +47,7 @@ namespace ZstdNet
         public byte[] Wrap(ReadOnlySpan<byte> src)
         {
             //NOTE: Wrap tries its best, but if src is uncompressible and the size is too large, ZSTD_error_dstSize_tooSmall will be thrown
-            var dstCapacity = Math.Min(Consts.MaxByteArrayLength, (ulong)GetCompressBoundLong((ulong)src.Length));
+            var dstCapacity = Math.Min(Consts.MaxByteArrayLength, GetCompressBoundLong((ulong)src.Length));
             var dst = ArrayPool<byte>.Shared.Rent((int)dstCapacity);
 
             try
@@ -66,10 +65,10 @@ namespace ZstdNet
         }
 
         public static int GetCompressBound(int size)
-            => (int)ExternMethods.ZSTD_compressBound((size_t)size);
+            => (int)ExternMethods.ZSTD_compressBound((nuint)size);
 
-        public static size_t GetCompressBoundLong(ulong size)
-            => ExternMethods.ZSTD_compressBound((size_t)size);
+        public static nuint GetCompressBoundLong(ulong size)
+            => ExternMethods.ZSTD_compressBound((nuint)size);
 
         public int Wrap(byte[] src, byte[] dst, int offset)
             => Wrap(new ReadOnlySpan<byte>(src), dst, offset);
@@ -88,16 +87,16 @@ namespace ZstdNet
         public int Wrap(ReadOnlySpan<byte> src, Span<byte> dst)
         {
             var dstSize = Options.AdvancedParams != null
-                ? ExternMethods.ZSTD_compress2(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length)
-                : Options.Cdict == IntPtr.Zero
-                    ? ExternMethods.ZSTD_compressCCtx(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.CompressionLevel)
-                    : ExternMethods.ZSTD_compress_usingCDict(cctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.Cdict);
+                ? ExternMethods.ZSTD_compress2(cctx, dst, (nuint)dst.Length, src, (nuint)src.Length)
+                : Options.Cdict == 0
+                    ? ExternMethods.ZSTD_compressCCtx(cctx, dst, (nuint)dst.Length, src, (nuint)src.Length, Options.CompressionLevel)
+                    : ExternMethods.ZSTD_compress_usingCDict(cctx, dst, (nuint)dst.Length, src, (nuint)src.Length, Options.Cdict);
 
             return (int)dstSize.EnsureZstdSuccess();
         }
 
         public readonly CompressionOptions Options;
 
-        private IntPtr cctx;
+        private nint cctx;
     }
 }

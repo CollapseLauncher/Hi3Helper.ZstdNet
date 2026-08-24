@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using size_t = System.UIntPtr;
 
 namespace ZstdNet
 {
@@ -26,8 +25,8 @@ namespace ZstdNet
 
         public void Dispose()
 		{
-			IntPtr oldDctx;
-			if ((oldDctx = Interlocked.Exchange(ref dctx, IntPtr.Zero)) == IntPtr.Zero)
+			nint oldDctx;
+			if ((oldDctx = Interlocked.Exchange(ref dctx, IntPtr.Zero)) == 0)
 				return;
 
 			ExternMethods.ZSTD_freeDCtx(oldDctx);
@@ -65,7 +64,7 @@ namespace ZstdNet
 
         public static ulong GetDecompressedSize(ReadOnlySpan<byte> src)
         {
-            var size = ExternMethods.ZSTD_getFrameContentSize(src, (size_t)src.Length);
+            var size = ExternMethods.ZSTD_getFrameContentSize(src, (nuint)src.Length);
             if (size == ExternMethods.ZSTD_CONTENTSIZE_UNKNOWN)
                 throw new ZstdException(ZSTD_ErrorCode.ZSTD_error_GENERIC, "Decompressed content size is not specified");
             if (size == ExternMethods.ZSTD_CONTENTSIZE_ERROR)
@@ -96,15 +95,15 @@ namespace ZstdNet
                     throw new ZstdException(ZSTD_ErrorCode.ZSTD_error_dstSize_tooSmall, "Destination buffer size is less than specified decompressed content size");
             }
 
-            var dstSize = Options.Ddict == IntPtr.Zero
-                ? ExternMethods.ZSTD_decompressDCtx(dctx, dst, (size_t)dst.Length, src, (size_t)src.Length)
-                : ExternMethods.ZSTD_decompress_usingDDict(dctx, dst, (size_t)dst.Length, src, (size_t)src.Length, Options.Ddict);
+            var dstSize = Options.Ddict == 0
+                ? ExternMethods.ZSTD_decompressDCtx(dctx, dst, (nuint)dst.Length, src, (nuint)src.Length)
+                : ExternMethods.ZSTD_decompress_usingDDict(dctx, dst, (nuint)dst.Length, src, (nuint)src.Length, Options.Ddict);
 
             return (int)dstSize.EnsureZstdSuccess();
         }
 
         public readonly DecompressionOptions Options;
 
-        private IntPtr dctx;
+        private nint dctx;
     }
 }

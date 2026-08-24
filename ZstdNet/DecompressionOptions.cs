@@ -38,7 +38,7 @@ namespace ZstdNet
             AdvancedParams = advancedParams;
         }
 
-        internal void ApplyDecompressionParams(IntPtr dctx)
+        internal void ApplyDecompressionParams(nint dctx)
         {
             if (AdvancedParams == null)
                 return;
@@ -68,6 +68,6 @@ namespace ZstdNet
         public readonly byte[] Dictionary;
         public readonly IReadOnlyDictionary<ZSTD_dParameter, int> AdvancedParams;
 
-        internal IntPtr Ddict;
+        internal nint Ddict;
     }
 }

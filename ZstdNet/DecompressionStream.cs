@@ -18,9 +18,9 @@ namespace ZstdNet
 		private readonly Memory<byte> inputMemory;
 #endif
 
-		private IntPtr  dStream;
-		private UIntPtr pos;
-		private UIntPtr size;
+		private nint  dStream;
+		private nuint pos;
+		private nuint size;
 
 		private bool leaveOpen;
 
@@ -57,7 +57,7 @@ namespace ZstdNet
             {
                 options.ApplyDecompressionParams(dStream);
 
-                if (options.Ddict != IntPtr.Zero)
+                if (options.Ddict != 0)
                     ZSTD_DCtx_refDDict(dStream, options.Ddict).EnsureZstdSuccess();
             }
 
@@ -66,7 +66,7 @@ namespace ZstdNet
 #if !NETSTANDARD2_0
 			inputMemory = new Memory<byte>(inputBuffer, 0, this.bufferSize);
 #endif
-            pos            = size = (UIntPtr)this.bufferSize;
+            pos            = size = (nuint)this.bufferSize;
             this.leaveOpen = leaveOpen;
         }
 
@@ -109,7 +109,7 @@ namespace ZstdNet
         private int ReadInternal(Span<byte> buffer)
         {
             var input = new ZSTD_Buffer(pos, size);
-            var output = new ZSTD_Buffer(UIntPtr.Zero, (UIntPtr)buffer.Length);
+            var output = new ZSTD_Buffer(0, (nuint)buffer.Length);
 
             var inputSpan = new Span<byte>(inputBuffer, 0, bufferSize);
 
@@ -131,7 +131,7 @@ namespace ZstdNet
             ReadInternalAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             var input = new ZSTD_Buffer(pos, size);
-            var output = new ZSTD_Buffer(UIntPtr.Zero, (UIntPtr)buffer.Length);
+            var output = new ZSTD_Buffer(0, (nuint)buffer.Length);
 
 			while(!output.IsFullyConsumed)
 			{
@@ -145,8 +145,8 @@ namespace ZstdNet
 #endif
                         break;
 
-                    input.size = (UIntPtr)bytesRead;
-                    input.pos = UIntPtr.Zero;
+                    input.size = (nuint)bytesRead;
+                    input.pos  = 0;
                 }
 
                 Decompress(buffer.Span, ref output, ref input);
@@ -174,8 +174,8 @@ namespace ZstdNet
             int bytesRead = innerStream.Read(inputBuffer, 0, inputSpan.Length);
 #endif
 
-            input.size = (UIntPtr)bytesRead;
-            input.pos = UIntPtr.Zero;
+            input.size = (nuint)bytesRead;
+            input.pos = 0;
 
             return bytesRead;
         }
@@ -204,8 +204,8 @@ namespace ZstdNet
 			if (!disposing)
 				return;
 
-			IntPtr dLastStream;
-			if ((dLastStream = Interlocked.Exchange(ref dStream, IntPtr.Zero)) == IntPtr.Zero)
+			nint dLastStream;
+			if ((dLastStream = Interlocked.Exchange(ref dStream, IntPtr.Zero)) == 0)
 				return;
 
             ZSTD_freeDStream(dLastStream);
@@ -232,7 +232,7 @@ namespace ZstdNet
 
         private void EnsureNotDisposed()
         {
-            if (dStream == IntPtr.Zero)
+            if (dStream == 0)
                 throw new ObjectDisposedException(nameof(DecompressionStream));
         }
     }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using size_t = System.UIntPtr;
 
 namespace ZstdNet
 {
@@ -20,7 +19,7 @@ namespace ZstdNet
             Dictionary = dict;
 
             if (dict != null)
-                Cdict = ExternMethods.ZSTD_createCDict(dict, (size_t)dict.Length, compressionLevel).EnsureZstdSuccess();
+                Cdict = ExternMethods.ZSTD_createCDict(dict, (nuint)dict.Length, compressionLevel).EnsureZstdSuccess();
             else
                 GC.SuppressFinalize(this); // No unmanaged resources
         }
@@ -43,7 +42,7 @@ namespace ZstdNet
             AdvancedParams = advancedParams;
         }
 
-        internal void ApplyCompressionParams(IntPtr cctx)
+        internal void ApplyCompressionParams(nint cctx)
         {
             if (AdvancedParams == null || !AdvancedParams.ContainsKey(ZSTD_cParameter.ZSTD_c_compressionLevel))
                 ExternMethods.ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter.ZSTD_c_compressionLevel, CompressionLevel).EnsureZstdSuccess();
@@ -65,12 +64,12 @@ namespace ZstdNet
 
         private void Dispose(bool disposing)
         {
-            if (Cdict == IntPtr.Zero)
+            if (Cdict == 0)
                 return;
 
             ExternMethods.ZSTD_freeCDict(Cdict);
 
-            Cdict = IntPtr.Zero;
+            Cdict = 0;
         }
 
         public static int MinCompressionLevel => ExternMethods.ZSTD_minCLevel();
@@ -84,6 +83,6 @@ namespace ZstdNet
         public readonly byte[] Dictionary;
         public readonly IReadOnlyDictionary<ZSTD_cParameter, int> AdvancedParams;
 
-        internal IntPtr Cdict;
+        internal nint Cdict;
     }
 }
