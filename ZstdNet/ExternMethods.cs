@@ -117,8 +117,15 @@ namespace ZstdNet
 #endif
         }
 
-        [DllImport(DllUtils.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern size_t ZDICT_trainFromBuffer(byte[] dictBuffer, size_t dictBufferCapacity, byte[] samplesBuffer, size_t[] samplesSizes, uint nbSamples);
+        public static size_t ZDICT_trainFromBuffer(Span<byte> dictBuffer, size_t dictBufferCapacity, Span<byte> samplesBuffer, Span<size_t> samplesSizes, uint nbSamples)
+			=> ZDICT_trainFromBuffer(ref MemoryMarshal.GetReference(dictBuffer),
+	                                 dictBufferCapacity,
+	                                 ref MemoryMarshal.GetReference(samplesBuffer),
+	                                 ref MemoryMarshal.GetReference(samplesSizes),
+	                                 nbSamples);
+
+		[DllImport(DllUtils.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern size_t ZDICT_trainFromBuffer(ref byte dictBuffer, size_t dictBufferCapacity, ref byte samplesBuffer, ref size_t samplesSizes, uint nbSamples);
         [DllImport(DllUtils.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint ZDICT_isError(size_t code);
         [DllImport(DllUtils.DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -302,7 +309,7 @@ namespace ZstdNet
             public size_t size;
             public size_t pos;
 
-            public bool IsFullyConsumed => (ulong)size <= (ulong)pos;
+            public bool IsFullyConsumed => size <= (ulong)pos;
         }
 
         #endregion
