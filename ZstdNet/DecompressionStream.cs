@@ -207,8 +207,8 @@ namespace ZstdNet
 			if (!disposing)
 				return;
 
-			nint dLastStream;
-			if ((dLastStream = Interlocked.Exchange(ref dStream, nint.Zero)) == nint.Zero)
+			IntPtr dLastStream;
+			if ((dLastStream = Interlocked.Exchange(ref dStream, IntPtr.Zero)) == IntPtr.Zero)
 				return;
 
             ZSTD_freeDStream(dLastStream);

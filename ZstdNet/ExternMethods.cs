@@ -45,7 +45,7 @@ namespace ZstdNet
 #if !NET6_0_OR_GREATER
         public static void SetWinDllDirectory()
         {
-            string path = Path.Combine(_currentProcPath, _libFolderPath);
+            string path = Path.Combine(CurrentProcPath, LibFolderPath);
             if(!SetDllDirectory(path))
                 Trace.TraceWarning($"{nameof(ZstdNet)}: Failed to set DLL directory to '{path}'");
         }
@@ -309,10 +309,14 @@ namespace ZstdNet
             public size_t size;
             public size_t pos;
 
-            public bool IsFullyConsumed => size <= (ulong)pos;
-        }
+#if NET7_0_OR_GREATER
+			public bool IsFullyConsumed => size <= pos;
+#else
+			public bool IsFullyConsumed => (ulong)size <= (ulong)pos;
+#endif
+		}
 
-        #endregion
+#endregion
     }
 
     public enum ZSTD_cParameter

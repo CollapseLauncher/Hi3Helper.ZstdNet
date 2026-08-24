@@ -274,8 +274,8 @@ namespace ZstdNet
 
         protected virtual async ValueTask DisposeAsyncCore()
 		{
-			nint cLastStream;
-			if ((cLastStream = Interlocked.Exchange(ref cStream, nint.Zero)) == nint.Zero)
+			IntPtr cLastStream;
+			if ((cLastStream = Interlocked.Exchange(ref cStream, IntPtr.Zero)) == IntPtr.Zero)
 				return;
 
 			try
@@ -300,8 +300,8 @@ namespace ZstdNet
 			if (!disposing)
 				return;
 
-			nint cLastStream;
-			if ((cLastStream = Interlocked.Exchange(ref cStream, nint.Zero)) == nint.Zero)
+			IntPtr cLastStream;
+			if ((cLastStream = Interlocked.Exchange(ref cStream, IntPtr.Zero)) == IntPtr.Zero)
 				return;
 
 			try

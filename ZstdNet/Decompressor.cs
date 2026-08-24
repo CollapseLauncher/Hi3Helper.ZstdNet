@@ -26,8 +26,8 @@ namespace ZstdNet
 
         public void Dispose()
 		{
-			nint oldDctx;
-			if ((oldDctx = Interlocked.Exchange(ref dctx, nint.Zero)) == IntPtr.Zero)
+			IntPtr oldDctx;
+			if ((oldDctx = Interlocked.Exchange(ref dctx, IntPtr.Zero)) == IntPtr.Zero)
 				return;
 
 			ExternMethods.ZSTD_freeDCtx(oldDctx);

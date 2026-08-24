@@ -31,8 +31,8 @@ namespace ZstdNet
 
         public void Dispose()
 		{
-			nint oldCctx;
-			if ((oldCctx = Interlocked.Exchange(ref cctx, nint.Zero)) == IntPtr.Zero)
+			IntPtr oldCctx;
+			if ((oldCctx = Interlocked.Exchange(ref cctx, IntPtr.Zero)) == IntPtr.Zero)
 				return;
 
 			ExternMethods.ZSTD_freeCCtx(oldCctx);
@@ -48,7 +48,7 @@ namespace ZstdNet
         public byte[] Wrap(ReadOnlySpan<byte> src)
         {
             //NOTE: Wrap tries its best, but if src is uncompressible and the size is too large, ZSTD_error_dstSize_tooSmall will be thrown
-            var dstCapacity = Math.Min(Consts.MaxByteArrayLength, GetCompressBoundLong((ulong)src.Length));
+            var dstCapacity = Math.Min(Consts.MaxByteArrayLength, (ulong)GetCompressBoundLong((ulong)src.Length));
             var dst = ArrayPool<byte>.Shared.Rent((int)dstCapacity);
 
             try
@@ -68,7 +68,7 @@ namespace ZstdNet
         public static int GetCompressBound(int size)
             => (int)ExternMethods.ZSTD_compressBound((size_t)size);
 
-        public static ulong GetCompressBoundLong(ulong size)
+        public static size_t GetCompressBoundLong(ulong size)
             => ExternMethods.ZSTD_compressBound((size_t)size);
 
         public int Wrap(byte[] src, byte[] dst, int offset)
