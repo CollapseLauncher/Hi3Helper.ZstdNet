@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -12,25 +12,27 @@ namespace ZstdNet
 	{
 		private readonly Stream innerStream;
 		private readonly byte[] outputBuffer;
-		private readonly int bufferSize;
+		private readonly int    bufferSize;
 #if !NETSTANDARD2_0
 		private readonly ReadOnlyMemory<byte> outputMemory;
 #endif
 
-        private IntPtr cStream;
-        private UIntPtr pos;
+		private IntPtr  cStream;
+		private UIntPtr pos;
+
+		private bool leaveOpen;
 
         public readonly CompressionOptions Options;
 
-        public CompressionStream(Stream stream)
-            : this(stream, CompressionOptions.Default)
+        public CompressionStream(Stream stream, bool leaveOpen = false)
+            : this(stream, CompressionOptions.Default, 0, leaveOpen)
         { }
 
-        public CompressionStream(Stream stream, int bufferSize)
-            : this(stream, CompressionOptions.Default, bufferSize)
+        public CompressionStream(Stream stream, int bufferSize, bool leaveOpen = false)
+            : this(stream, CompressionOptions.Default, bufferSize, leaveOpen)
         { }
 
-        public CompressionStream(Stream stream, CompressionOptions options, int bufferSize = 0)
+        public CompressionStream(Stream stream, CompressionOptions options, int bufferSize = 0, bool leaveOpen = false)
         {
 #if NET6_0_OR_GREATER
             ReturnValueExtensions.ThrowIfDllNotExist();
@@ -62,7 +64,9 @@ namespace ZstdNet
 #if !NETSTANDARD2_0
 			outputMemory = new ReadOnlyMemory<byte>(outputBuffer, 0, this.bufferSize);
 #endif
-        }
+
+	        this.leaveOpen = leaveOpen;
+		}
 
 #if !NETSTANDARD2_0
 		public override void Write(ReadOnlySpan<byte> buffer)
@@ -114,7 +118,7 @@ namespace ZstdNet
             {
                 if (output.IsFullyConsumed)
                 {
-                    FlushOutputBuffer(outputSpan.Slice(0, (int)output.pos));
+                    FlushOutputBuffer(outputSpan[..(int)output.pos]);
                     output.pos = UIntPtr.Zero;
                 }
 
@@ -168,7 +172,7 @@ namespace ZstdNet
 		private void FlushOutputBuffer(ReadOnlySpan<byte> outputSpan)
 			=> innerStream.Write(outputSpan);
 		private ValueTask FlushOutputBufferAsync(ref ZSTD_Buffer output, CancellationToken cancellationToken)
-			=> innerStream.WriteAsync(outputMemory.Slice(0, (int)output.pos), cancellationToken);
+			=> innerStream.WriteAsync(outputMemory[..(int)output.pos], cancellationToken);
 #else
         private void FlushOutputBuffer(ReadOnlySpan<byte> outputSpan)
             => innerStream.Write(outputBuffer, 0, outputSpan.Length);
@@ -220,13 +224,13 @@ namespace ZstdNet
             {
                 if (output.IsFullyConsumed)
                 {
-                    FlushOutputBuffer(outputSpan.Slice(0, (int)output.pos));
+                    FlushOutputBuffer(outputSpan[..(int)output.pos]);
                     output.pos = UIntPtr.Zero;
                 }
             } while (Compress(buffer, ref output, ref input, directive) != UIntPtr.Zero);
 
             if (output.pos != UIntPtr.Zero)
-                FlushOutputBuffer(outputSpan.Slice(0, (int)output.pos));
+                FlushOutputBuffer(outputSpan[..(int)output.pos]);
 
             pos = UIntPtr.Zero;
         }
@@ -269,46 +273,50 @@ namespace ZstdNet
 		}
 
         protected virtual async ValueTask DisposeAsyncCore()
-        {
-            if (cStream == IntPtr.Zero)
-                return;
+		{
+			nint cLastStream;
+			if ((cLastStream = Interlocked.Exchange(ref cStream, nint.Zero)) == nint.Zero)
+				return;
 
-            try
+			try
             {
                 await FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_end, CancellationToken.None).ConfigureAwait(false);
-            }
+
+                // Dispose if leaveOpen is false.
+                if (!leaveOpen)
+	                await innerStream.DisposeAsync();
+			}
             finally
             {
-                ZSTD_freeCStream(cStream);
-
+                ZSTD_freeCStream(cLastStream);
                 if (outputBuffer != null)
                     ArrayPool<byte>.Shared.Return(outputBuffer);
-
-                cStream = IntPtr.Zero;
             }
         }
 #endif
 
         protected override void Dispose(bool disposing)
-        {
-            if (cStream == IntPtr.Zero)
-                return;
+		{
+			if (!disposing)
+				return;
 
-            try
-            {
-                if (!disposing)
-                    return;
+			nint cLastStream;
+			if ((cLastStream = Interlocked.Exchange(ref cStream, nint.Zero)) == nint.Zero)
+				return;
 
-                FlushCompressStream(ZSTD_EndDirective.ZSTD_e_end);
-            }
+			try
+			{
+				FlushCompressStream(ZSTD_EndDirective.ZSTD_e_end);
+
+				// Dispose if leaveOpen is false.
+				if (!leaveOpen)
+					innerStream.Dispose();
+			}
             finally
             {
-                ZSTD_freeCStream(cStream);
-
+                ZSTD_freeCStream(cLastStream);
                 if (outputBuffer != null)
                     ArrayPool<byte>.Shared.Return(outputBuffer);
-
-                cStream = IntPtr.Zero;
             }
         }
 

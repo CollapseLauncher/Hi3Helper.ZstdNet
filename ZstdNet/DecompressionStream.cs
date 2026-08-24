@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -12,26 +12,28 @@ namespace ZstdNet
 	{
 		private readonly Stream innerStream;
 		private readonly byte[] inputBuffer;
-		private readonly int bufferSize;
+		private readonly int    bufferSize;
 #if !NETSTANDARD2_0
 		private readonly Memory<byte> inputMemory;
 #endif
 
-        private IntPtr dStream;
-        private UIntPtr pos;
-        private UIntPtr size;
+		private IntPtr  dStream;
+		private UIntPtr pos;
+		private UIntPtr size;
 
-        public readonly DecompressionOptions Options;
+		private bool leaveOpen;
 
-        public DecompressionStream(Stream stream)
-            : this(stream, null)
+		public readonly DecompressionOptions Options;
+
+        public DecompressionStream(Stream stream, bool leaveOpen = false)
+            : this(stream, null, 0, leaveOpen)
         { }
 
-        public DecompressionStream(Stream stream, int bufferSize)
-            : this(stream, null, bufferSize)
+        public DecompressionStream(Stream stream, int bufferSize, bool leaveOpen = false)
+            : this(stream, null, bufferSize, leaveOpen)
         { }
 
-        public DecompressionStream(Stream stream, DecompressionOptions options, int bufferSize = 0)
+        public DecompressionStream(Stream stream, DecompressionOptions options, int bufferSize = 0, bool leaveOpen = false)
         {
 #if NET6_0_OR_GREATER
             ReturnValueExtensions.ThrowIfDllNotExist();
@@ -63,7 +65,8 @@ namespace ZstdNet
 #if !NETSTANDARD2_0
 			inputMemory = new Memory<byte>(inputBuffer, 0, this.bufferSize);
 #endif
-            pos = size = (UIntPtr)this.bufferSize;
+            pos            = size = (UIntPtr)this.bufferSize;
+            this.leaveOpen = leaveOpen;
         }
 
 #if !NETSTANDARD2_0
@@ -200,16 +203,22 @@ namespace ZstdNet
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
         protected override void Dispose(bool disposing)
-        {
-            if (dStream == IntPtr.Zero)
-                return;
+		{
+			if (!disposing)
+				return;
 
-            ZSTD_freeDStream(dStream);
+			nint dLastStream;
+			if ((dLastStream = Interlocked.Exchange(ref dStream, nint.Zero)) == nint.Zero)
+				return;
 
-            if (inputBuffer != null)
+            ZSTD_freeDStream(dLastStream);
+
+            // Dispose if leaveOpen is false.
+            if (!leaveOpen)
+	            innerStream.Dispose();
+
+			if (inputBuffer != null)
                 ArrayPool<byte>.Shared.Return(inputBuffer);
-
-            dStream = IntPtr.Zero;
         }
 
         private void EnsureParamsValid(byte[] buffer, int offset, int count)
