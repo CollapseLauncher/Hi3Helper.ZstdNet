@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using size_t = System.UIntPtr;
 
@@ -40,7 +40,7 @@ namespace ZstdNet
                     throw new ArgumentOutOfRangeException(nameof(advancedParams), $"Advanced parameter '{param.Key}' is out of range [{bounds.lowerBound}, {bounds.upperBound}]");
             }
 
-            this.AdvancedParams = advancedParams;
+            AdvancedParams = advancedParams;
         }
 
         internal void ApplyCompressionParams(IntPtr cctx)

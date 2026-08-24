@@ -300,7 +300,7 @@ namespace ZstdNet
         {
             public ZSTD_Buffer(size_t pos, size_t size)
             {
-                this.buffer = IntPtr.Zero;
+                buffer = IntPtr.Zero;
                 this.size = size;
                 this.pos = pos;
             }
