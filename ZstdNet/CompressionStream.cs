@@ -156,16 +156,12 @@ namespace ZstdNet
             pos = output.pos;
         }
 
-        private unsafe UIntPtr Compress(ReadOnlySpan<byte> buffer, ref ZSTD_Buffer output, ref ZSTD_Buffer input, ZSTD_EndDirective directive)
-        {
-            fixed (void* inputHandle = &MemoryMarshal.GetReference(buffer))
-            fixed (void* outputHandle = &outputBuffer[0])
-            {
-                input.buffer = new IntPtr(inputHandle);
-                output.buffer = new IntPtr(outputHandle);
+        private unsafe nuint Compress(ReadOnlySpan<byte> buffer, ref ZSTD_Buffer output, ref ZSTD_Buffer input, ZSTD_EndDirective directive)
+		{
+			input.buffer  = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+			output.buffer = Marshal.UnsafeAddrOfPinnedArrayElement(outputBuffer, 0);
 
-                return ZSTD_compressStream2(cStream, ref output, ref input, directive).EnsureZstdSuccess();
-            }
+			return ZSTD_compressStream2(cStream, ref output, ref input, directive).EnsureZstdSuccess();
         }
 
 #if !NETSTANDARD2_0
