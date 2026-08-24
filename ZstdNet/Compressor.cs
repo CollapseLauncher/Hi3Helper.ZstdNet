@@ -69,7 +69,7 @@ namespace ZstdNet
             => (int)ExternMethods.ZSTD_compressBound((size_t)size);
 
         public static ulong GetCompressBoundLong(ulong size)
-            => (ulong)ExternMethods.ZSTD_compressBound((size_t)size);
+            => ExternMethods.ZSTD_compressBound((size_t)size);
 
         public int Wrap(byte[] src, byte[] dst, int offset)
             => Wrap(new ReadOnlySpan<byte>(src), dst, offset);

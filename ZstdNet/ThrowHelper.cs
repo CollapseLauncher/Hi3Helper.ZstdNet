@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using size_t = System.UIntPtr;
 
@@ -26,7 +26,7 @@ namespace ZstdNet
 
         private static void ThrowException(size_t returnValue, string message)
         {
-            var code = unchecked(0 - (uint)(ulong)returnValue); // Negate returnValue (UIntPtr)
+            var code = unchecked(0 - (uint)returnValue); // Negate returnValue (UIntPtr)
             throw new ZstdException(unchecked((ZSTD_ErrorCode)code), message);
         }
 
