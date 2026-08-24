@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Buffers;
+using System.Threading;
 using size_t = System.UIntPtr;
 
 namespace ZstdNet
@@ -26,22 +27,16 @@ namespace ZstdNet
                 ExternMethods.ZSTD_CCtx_refCDict(cctx, options.Cdict).EnsureZstdSuccess();
         }
 
-        ~Compressor() => Dispose(false);
+        ~Compressor() => Dispose();
 
         public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+		{
+			nint oldCctx;
+			if ((oldCctx = Interlocked.Exchange(ref cctx, nint.Zero)) == IntPtr.Zero)
+				return;
 
-        private void Dispose(bool disposing)
-        {
-            if (cctx == IntPtr.Zero)
-                return;
-
-            ExternMethods.ZSTD_freeCCtx(cctx);
-
-            cctx = IntPtr.Zero;
+			ExternMethods.ZSTD_freeCCtx(oldCctx);
+			GC.SuppressFinalize(this);
         }
 
         public byte[] Wrap(byte[] src)

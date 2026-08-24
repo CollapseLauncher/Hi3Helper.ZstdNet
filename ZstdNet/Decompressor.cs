@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading;
 using size_t = System.UIntPtr;
 
 namespace ZstdNet
@@ -21,22 +22,16 @@ namespace ZstdNet
             options.ApplyDecompressionParams(dctx);
         }
 
-        ~Decompressor() => Dispose(false);
+        ~Decompressor() => Dispose();
 
         public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+		{
+			nint oldDctx;
+			if ((oldDctx = Interlocked.Exchange(ref dctx, nint.Zero)) == IntPtr.Zero)
+				return;
 
-        private void Dispose(bool disposing)
-        {
-            if (dctx == IntPtr.Zero)
-                return;
-
-            ExternMethods.ZSTD_freeDCtx(dctx);
-
-            dctx = IntPtr.Zero;
+			ExternMethods.ZSTD_freeDCtx(oldDctx);
+			GC.SuppressFinalize(this);
         }
 
         public byte[] Unwrap(byte[] src, int maxDecompressedSize = int.MaxValue)
