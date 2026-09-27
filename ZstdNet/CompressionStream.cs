@@ -11,17 +11,17 @@ namespace ZstdNet
 {
 	public class CompressionStream : Stream
 	{
-		private readonly Stream innerStream;
-		private readonly byte[] outputBuffer;
-		private readonly int    bufferSize;
+		private readonly Stream _innerStream;
+		private readonly byte[] _outputBuffer;
+		private readonly int    _bufferSize;
 #if !NETSTANDARD2_0
-		private readonly ReadOnlyMemory<byte> outputMemory;
+		private readonly ReadOnlyMemory<byte> _outputMemory;
 #endif
 
-		private nint  cStream;
-		private nuint pos;
+		private nint  _cStream;
+		private nuint _pos;
 
-		private bool leaveOpen;
+		private readonly bool _leaveOpen;
 
         public readonly CompressionOptions Options;
 
@@ -46,42 +46,40 @@ namespace ZstdNet
             if (bufferSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
-            innerStream = stream;
+            _innerStream = stream;
 
-            cStream = ZSTD_createCStream().EnsureZstdSuccess();
-            ZSTD_CCtx_reset(cStream, ZSTD_ResetDirective.ZSTD_reset_session_only).EnsureZstdSuccess();
+            _cStream = ZSTD_createCStream().EnsureZstdSuccess();
+            ZSTD_CCtx_reset(_cStream, ZSTD_ResetDirective.ZSTD_reset_session_only).EnsureZstdSuccess();
 
             Options = options;
             if (options != null)
             {
-                options.ApplyCompressionParams(cStream);
+                options.ApplyCompressionParams(_cStream);
 
                 if (options.Cdict != 0)
-                    ZSTD_CCtx_refCDict(cStream, options.Cdict).EnsureZstdSuccess();
+                    ZSTD_CCtx_refCDict(_cStream, options.Cdict).EnsureZstdSuccess();
             }
 
-			this.bufferSize = bufferSize > 0 ? bufferSize : (int)ZSTD_CStreamOutSize().EnsureZstdSuccess();
-			outputBuffer = ArrayPool<byte>.Shared.Rent(this.bufferSize);
+			this._bufferSize = bufferSize > 0 ? bufferSize : (int)ZSTD_CStreamOutSize().EnsureZstdSuccess();
+			_outputBuffer = ArrayPool<byte>.Shared.Rent(this._bufferSize);
 #if !NETSTANDARD2_0
-			outputMemory = new ReadOnlyMemory<byte>(outputBuffer, 0, this.bufferSize);
+			_outputMemory = new ReadOnlyMemory<byte>(_outputBuffer, 0, this._bufferSize);
 #endif
 
-	        this.leaveOpen = leaveOpen;
+	        this._leaveOpen = leaveOpen;
 		}
 
 #if !NETSTANDARD2_0
 		public override void Write(ReadOnlySpan<byte> buffer)
 		{
 			EnsureNotDisposed();
-
-            WriteInternal(buffer);
+            WriteInternal(_cStream, buffer);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             EnsureNotDisposed();
-
-            return WriteInternalAsync(buffer, cancellationToken);
+            return WriteInternalAsync(_cStream, buffer, cancellationToken);
         }
 #endif
 
@@ -89,8 +87,7 @@ namespace ZstdNet
         {
             EnsureParamsValid(buffer, offset, count);
             EnsureNotDisposed();
-
-            WriteInternal(new Span<byte>(buffer, offset, count));
+            WriteInternal(_cStream, new Span<byte>(buffer, offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -99,21 +96,21 @@ namespace ZstdNet
             EnsureNotDisposed();
 
 #if !NETSTANDARD2_0
-			return WriteInternalAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+			return WriteInternalAsync(_cStream, new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
 #else
-            return WriteInternalAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+            return WriteInternalAsync(_cStream, new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
 #endif
-        }
+		}
 
-        private void WriteInternal(ReadOnlySpan<byte> buffer)
+		private void WriteInternal(nint context, ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length == 0)
                 return;
 
-            var input = new ZSTD_Buffer(0, (nuint)buffer.Length);
-            var output = new ZSTD_Buffer(pos, (nuint)bufferSize);
+            ZSTD_Buffer input  = new(0, (nuint)buffer.Length);
+            ZSTD_Buffer output = new(_pos, (nuint)_bufferSize);
 
-            var outputSpan = new ReadOnlySpan<byte>(outputBuffer, 0, bufferSize);
+            var outputSpan = new ReadOnlySpan<byte>(_outputBuffer, 0, _bufferSize);
 
             do
             {
@@ -123,10 +120,10 @@ namespace ZstdNet
                     output.pos = 0;
                 }
 
-                Compress(buffer, ref output, ref input, ZSTD_EndDirective.ZSTD_e_continue);
+                Compress(context, buffer, ref output, ref input, ZSTD_EndDirective.ZSTD_e_continue);
             } while (!input.IsFullyConsumed);
 
-            pos = output.pos;
+            _pos = output.pos;
         }
 
 		private async
@@ -135,13 +132,13 @@ namespace ZstdNet
 #else
             Task
 #endif
-            WriteInternalAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            WriteInternalAsync(nint context, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             if (buffer.Length == 0)
                 return;
 
-            var input = new ZSTD_Buffer(0, (nuint)buffer.Length);
-            var output = new ZSTD_Buffer(pos, (nuint)bufferSize);
+            ZSTD_Buffer input  = new(0, (nuint)buffer.Length);
+            ZSTD_Buffer output = new(_pos, (nuint)_bufferSize);
 
             do
             {
@@ -151,30 +148,30 @@ namespace ZstdNet
                     output.pos = 0;
                 }
 
-                Compress(buffer.Span, ref output, ref input, ZSTD_EndDirective.ZSTD_e_continue);
+                Compress(context, buffer.Span, ref output, ref input, ZSTD_EndDirective.ZSTD_e_continue);
             } while (!input.IsFullyConsumed);
 
-            pos = output.pos;
+            _pos = output.pos;
         }
 
-        private unsafe nuint Compress(ReadOnlySpan<byte> buffer, ref ZSTD_Buffer output, ref ZSTD_Buffer input, ZSTD_EndDirective directive)
+        private unsafe nuint Compress(nint context, ReadOnlySpan<byte> buffer, ref ZSTD_Buffer output, ref ZSTD_Buffer input, ZSTD_EndDirective directive)
 		{
 			input.buffer  = (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-			output.buffer = Marshal.UnsafeAddrOfPinnedArrayElement(outputBuffer, 0);
+			output.buffer = Marshal.UnsafeAddrOfPinnedArrayElement(_outputBuffer, 0);
 
-			return ZSTD_compressStream2(cStream, ref output, ref input, directive).EnsureZstdSuccess();
+			return ZSTD_compressStream2(context, ref output, ref input, directive).EnsureZstdSuccess();
         }
 
 #if !NETSTANDARD2_0
 		private void FlushOutputBuffer(ReadOnlySpan<byte> outputSpan)
-			=> innerStream.Write(outputSpan);
+			=> _innerStream.Write(outputSpan);
 		private ValueTask FlushOutputBufferAsync(ref ZSTD_Buffer output, CancellationToken cancellationToken)
-			=> innerStream.WriteAsync(outputMemory[..(int)output.pos], cancellationToken);
+			=> _innerStream.WriteAsync(_outputMemory[..(int)output.pos], cancellationToken);
 #else
         private void FlushOutputBuffer(ReadOnlySpan<byte> outputSpan)
-            => innerStream.Write(outputBuffer, 0, outputSpan.Length);
+            => _innerStream.Write(_outputBuffer, 0, outputSpan.Length);
         private Task FlushOutputBufferAsync(ref ZSTD_Buffer output, CancellationToken cancellationToken)
-            => innerStream.WriteAsync(outputBuffer, 0, (int)output.pos, cancellationToken);
+            => _innerStream.WriteAsync(_outputBuffer, 0, (int)output.pos, cancellationToken);
 #endif
 
         ~CompressionStream() => Dispose(false);
@@ -193,43 +190,40 @@ namespace ZstdNet
         public override void Flush()
         {
             EnsureNotDisposed();
-
-            FlushCompressStream(ZSTD_EndDirective.ZSTD_e_flush);
+            FlushCompressStream(_cStream, ZSTD_EndDirective.ZSTD_e_flush);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             EnsureNotDisposed();
-
 #if !NETSTANDARD2_0
-			return FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_flush, cancellationToken).AsTask();
+			return FlushCompressStreamAsync(_cStream, ZSTD_EndDirective.ZSTD_e_flush, cancellationToken).AsTask();
 #else
-            return FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_flush, cancellationToken);
+            return FlushCompressStreamAsync(_cStream, ZSTD_EndDirective.ZSTD_e_flush, cancellationToken);
 #endif
-        }
+		}
 
-        private void FlushCompressStream(ZSTD_EndDirective directive)
+		private void FlushCompressStream(nint context, ZSTD_EndDirective directive)
         {
             var buffer = ReadOnlySpan<byte>.Empty;
 
-            var input = new ZSTD_Buffer(0, 0);
-            var output = new ZSTD_Buffer(pos, (nuint)bufferSize);
+            ZSTD_Buffer input  = new(0, 0);
+            ZSTD_Buffer output = new(_pos, (nuint)_bufferSize);
 
-            var outputSpan = new ReadOnlySpan<byte>(outputBuffer, 0, bufferSize);
+            var outputSpan = new ReadOnlySpan<byte>(_outputBuffer, 0, _bufferSize);
 
             do
             {
-                if (output.IsFullyConsumed)
-                {
-                    FlushOutputBuffer(outputSpan[..(int)output.pos]);
-                    output.pos = 0;
-                }
-            } while (Compress(buffer, ref output, ref input, directive) != 0);
+	            if (!output.IsFullyConsumed) continue;
+
+	            FlushOutputBuffer(outputSpan[..(int)output.pos]);
+	            output.pos = 0;
+            } while (Compress(context, buffer, ref output, ref input, directive) != 0);
 
             if (output.pos != 0)
                 FlushOutputBuffer(outputSpan[..(int)output.pos]);
 
-            pos = 0;
+            _pos = 0;
         }
 
 		private async
@@ -238,10 +232,10 @@ namespace ZstdNet
 #else
             Task
 #endif
-            FlushCompressStreamAsync(ZSTD_EndDirective directive, CancellationToken cancellationToken)
+            FlushCompressStreamAsync(nint context, ZSTD_EndDirective directive, CancellationToken cancellationToken)
         {
-            var input = new ZSTD_Buffer(0, 0);
-            var output = new ZSTD_Buffer(pos, (nuint)bufferSize);
+            ZSTD_Buffer input  = new(0, 0);
+            ZSTD_Buffer output = new(_pos, (nuint)_bufferSize);
 
             do
             {
@@ -250,12 +244,12 @@ namespace ZstdNet
 
                 await FlushOutputBufferAsync(ref output, cancellationToken);
                 output.pos = 0;
-            } while (Compress(ReadOnlySpan<byte>.Empty, ref output, ref input, directive) != 0);
+            } while (Compress(context, ReadOnlySpan<byte>.Empty, ref output, ref input, directive) != 0);
 
             if (output.pos != 0)
                 await FlushOutputBufferAsync(ref output, cancellationToken);
 
-            pos = 0;
+            _pos = 0;
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
@@ -272,22 +266,22 @@ namespace ZstdNet
         protected virtual async ValueTask DisposeAsyncCore()
 		{
 			nint cLastStream;
-			if ((cLastStream = Interlocked.Exchange(ref cStream, IntPtr.Zero)) == 0)
+			if ((cLastStream = Interlocked.Exchange(ref _cStream, IntPtr.Zero)) == 0)
 				return;
 
 			try
             {
-                await FlushCompressStreamAsync(ZSTD_EndDirective.ZSTD_e_end, CancellationToken.None);
+                await FlushCompressStreamAsync(cLastStream, ZSTD_EndDirective.ZSTD_e_end, CancellationToken.None);
 
                 // Dispose if leaveOpen is false.
-                if (!leaveOpen)
-	                await innerStream.DisposeAsync();
+                if (!_leaveOpen)
+	                await _innerStream.DisposeAsync();
 			}
             finally
             {
                 ZSTD_freeCStream(cLastStream);
-                if (outputBuffer != null)
-                    ArrayPool<byte>.Shared.Return(outputBuffer);
+                if (_outputBuffer != null)
+                    ArrayPool<byte>.Shared.Return(_outputBuffer);
             }
         }
 #endif
@@ -298,26 +292,26 @@ namespace ZstdNet
 				return;
 
 			nint cLastStream;
-			if ((cLastStream = Interlocked.Exchange(ref cStream, IntPtr.Zero)) == 0)
+			if ((cLastStream = Interlocked.Exchange(ref _cStream, IntPtr.Zero)) == 0)
 				return;
 
 			try
 			{
-				FlushCompressStream(ZSTD_EndDirective.ZSTD_e_end);
+				FlushCompressStream(cLastStream, ZSTD_EndDirective.ZSTD_e_end);
 
 				// Dispose if leaveOpen is false.
-				if (!leaveOpen)
-					innerStream.Dispose();
+				if (!_leaveOpen)
+					_innerStream.Dispose();
 			}
             finally
             {
                 ZSTD_freeCStream(cLastStream);
-                if (outputBuffer != null)
-                    ArrayPool<byte>.Shared.Return(outputBuffer);
+                if (_outputBuffer != null)
+                    ArrayPool<byte>.Shared.Return(_outputBuffer);
             }
         }
 
-        private void EnsureParamsValid(byte[] buffer, int offset, int count)
+        private static void EnsureParamsValid(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -331,7 +325,7 @@ namespace ZstdNet
 
         private void EnsureNotDisposed()
         {
-            if (cStream == 0)
+            if (_cStream == 0)
                 throw new ObjectDisposedException(nameof(CompressionStream));
         }
     }
